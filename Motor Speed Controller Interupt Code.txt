@@ -1,0 +1,183 @@
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"     //include external header files and libraries
+#include "stm32f4xx_it.h"  //import stm arm header files 
+#include "code.h" //import mathlab generated code
+/* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim7;   ( variables are imported from imported files)
+extern TIM_HandleTypeDef htim3;
+extern ExtU rtU;    //Defining global variable 
+extern ExtY rtY;     //Defining Global variable
+extern unsigned int ADC_value;
+extern unsigned long nT;   // UART variable 
+
+void rt_OneStep(void);   // function from mathlab generated code
+void NMI_Handler(void)
+{
+  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
+  /* USER CODE END NonMaskableInt_IRQn 0 */
+  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
+  /* USER CODE END NonMaskableInt_IRQn 1 */
+}
+void HardFault_Handler(void)
+{
+  /* USER CODE BEGIN HardFault_IRQn 0 */
+
+  /* USER CODE END HardFault_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
+    /* USER CODE END W1_HardFault_IRQn 0 */
+  }
+}
+
+/** * @brief This function handles Memory management fault. */
+void MemManage_Handler(void)
+{
+  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+
+  /* USER CODE END MemoryManagement_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+    /* USER CODE END W1_MemoryManagement_IRQn 0 */
+  }
+}
+/** * @brief This function handles Pre-fetch fault, memory access fault. */
+void BusFault_Handler(void)
+{
+  /* USER CODE BEGIN BusFault_IRQn 0 */
+
+  /* USER CODE END BusFault_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
+    /* USER CODE END W1_BusFault_IRQn 0 */
+  }
+}
+/*** @brief This function handles Undefined instruction or illegal state. */
+void UsageFault_Handler(void)
+{
+  /* USER CODE BEGIN UsageFault_IRQn 0 */
+
+  /* USER CODE END UsageFault_IRQn 0 */
+  while (1)
+  {
+    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
+    /* USER CODE END W1_UsageFault_IRQn 0 */
+  }
+}
+/*** @brief This function handles System service call via SWI instruction.*/
+void SVC_Handler(void)
+{
+  /* USER CODE BEGIN SVCall_IRQn 0 */
+
+  /* USER CODE END SVCall_IRQn 0 */
+  /* USER CODE BEGIN SVCall_IRQn 1 */
+
+  /* USER CODE END SVCall_IRQn 1 */
+}
+/**  * @brief This function handles Debug monitor.*/
+void DebugMon_Handler(void)
+{
+  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+
+  /* USER CODE END DebugMonitor_IRQn 0 */
+  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+
+  /* USER CODE END DebugMonitor_IRQn 1 */
+}
+
+/**
+  * @brief This function handles Pendable request for system service.
+  */
+void PendSV_Handler(void)
+{
+  /* USER CODE BEGIN PendSV_IRQn 0 */
+  /* USER CODE END PendSV_IRQn 0 */
+  /* USER CODE BEGIN PendSV_IRQn 1 */
+  /* USER CODE END PendSV_IRQn 1 */
+}
+/*** @brief This function handles System tick timer.*/
+void SysTick_Handler(void)
+{
+  /* USER CODE BEGIN SysTick_IRQn 0 */
+
+  /* USER CODE END SysTick_IRQn 0 */
+  HAL_IncTick();
+  /* USER CODE BEGIN SysTick_IRQn 1 */
+
+  /* USER CODE END SysTick_IRQn 1 */
+}
+
+
+/* STM32F4xx Peripheral Interrupt Handlers                                    */
+/* Add here the Interrupt Handlers for the used peripherals.                  */
+/* For the available peripheral interrupt handler names,                      */
+/* please refer to the startup file (startup_stm32f4xx.s).                    */
+
+/*** @brief This function handles TIM7 global interrupt.*/
+ void rt_OneStep(void)
+{
+  static boolean_T OverrunFlag = false;
+
+  /* Disable interrupts here */
+
+  /* Check for overrun */
+  if (OverrunFlag) {
+    rtmSetErrorStatus(rtM, "Overrun");
+    return;
+  }
+  OverrunFlag = true;
+  /* Save FPU context here (if necessary) */
+  /* Re-enable timer or interrupt here */
+  /* Set model inputs here */
+  /* Step the model */
+  code_step();
+  /* Get model outputs here */
+  /* Indicate task complete */
+  OverrunFlag = false;
+
+  /* Disable interrupts here */
+  /* Restore FPU context here (if necessary) */
+  /* Enable interrupts here */
+}
+void TIM7_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM7_IRQn 0 */
+  /* USER CODE END TIM7_IRQn 0 */
+
+  HAL_TIM_IRQHandler(&htim7);
+  /* USER CODE BEGIN TIM7_IRQ*/
+	rtU.Set_Speed = ADC_value;
+	rtU.Motor_Shaft_Position_counts = TIM2->CNT;  // getting the encoder reading 
+	rt_OneStep();
+	
+	if (rtY.Direction == 1)
+	{ //forward run
+		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,(GPIO_PinState)1);
+		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_13,(GPIO_PinState)0);
+	}
+	else 
+			{ //reverse  run
+		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,0);
+		HAL_GPIO_WritePin(GPIOD,GPIO_PIN_13,1);
+	}
+
+	__HAL_TIM_SetCompare(&htim3,TIM_CHANNEL_4,rtY.PWM_Duty_Length);
+	
+	nT++;
+	
+  /* USER CODE END TIM7_IRQn 1 */
+}
+/* USER CODE BEGIN 1 */
+/* USER CODE END 1 */
+/************************ (C) COPYR
+
+
+
+
+
+
+
+
+
